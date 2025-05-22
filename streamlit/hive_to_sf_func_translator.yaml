@@ -1,0 +1,281 @@
+name: hive_sf_func_translator
+description: This semantic model links the hive_func, sf_func, and error_info tables to provide alternatives for hive functions in Snowflake and offer error suggestions to users with proper reasoning when they inquire about error causes.
+tables:
+  - name: ERROR_INFO
+    base_table:
+      database: HIVE_TO_SF_MGN
+      schema: FUNCTION_TRANSLATOR
+      table: ERROR_INFO
+    dimensions:
+      - name: SF_FUNC_NAME
+        expr: SF_FUNC_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - ARRAY_POSITION
+          - EXTRACT
+          - CURRENT_TIMESTAMP
+        description: The name of the function that generated the error.
+        synonyms:
+          - snowflake_function_name
+          - sf_function
+          - function_name_in_snowflake
+          - snowflake_func_name
+          - sf_func
+          - function_name
+          - snowflake_function
+          - function_name_sf
+      - name: ERROR_CODE
+        expr: ERROR_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - 'invalid argument types for function ''ARRAY_POSITION'': (VARIANT, VARCHAR(16777216))'
+          - function extract does not support varchar(16777216) argument time
+          - Unknown Function NOW
+        description: This column stores error messages that occur during data processing, providing details about th error type, such as invalid function arguments, unsupported data types, or unrecognized functions.
+        synonyms:
+          - error_number
+          - error_id
+          - error_status
+          - exception_code
+          - fault_code
+          - error_identifier
+      - name: ERROR_REASON
+        expr: ERROR_REASON
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - ARRAY_POSITION expects the second parameter to be an ARRAY type.
+          - This error occurs when trying to use EXTRACT on a column that is not of DATE, TIME, or TIMESTAMP type.
+          - This error occurs when Now is used instead of current timestamp insnowflake.
+        description: A brief description of the reason for the error that occurred.
+        synonyms:
+          - error_description
+          - error_cause
+          - error_explanation
+          - error_source
+          - error_origin
+          - failure_reason
+          - issue_description
+          - problem_cause
+      - name: ERROR_FIX_SUGGESTION
+        expr: ERROR_FIX_SUGGESTION
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Please ensure that the second parameter is an ARRAY. Convert the VARCHAR to ARRAY if needed, for example using SPLIT() or ARRAY_CONSTRUCT.
+          - 'Please check the column being used in the EXTRACT function. Convert it into a proper DATE or TIMESTAMP format first using TO_DATE() or TO_TIMESTAMP(). For example: TO_DATE(string_column).'
+          - CURRENT_TIMESTAMP.
+        description: This column contains suggested fixes or troubleshooting steps for errors encountered, providing guidance on how to resolve issues such as data type conversions or incorrect function usage.
+        synonyms:
+          - solution_recommendation
+          - fix_recommendation
+          - error_resolution
+          - troubleshooting_tip
+          - correction_advice
+          - repair_suggestion
+    facts:
+      - name: FUNCTION_MAPPING_ID
+        expr: FUNCTION_MAPPING_ID
+        data_type: NUMBER(38,0)
+        sample_values:
+          - '2'
+          - '4'
+          - '3'
+        description: Unique identifier for a specific function mapping configuration.
+        synonyms:
+          - function_id
+          - mapping_key
+          - translator_id
+          - hive_func_id
+          - sf_func_mapping_id
+          - function_reference_id
+    primary_key:
+      columns:
+        - FUNCTION_MAPPING_ID
+  - name: HIVE_FUNC
+    base_table:
+      database: HIVE_TO_SF_MGN
+      schema: FUNCTION_TRANSLATOR
+      table: HIVE_FUNC
+    dimensions:
+      - name: HIVE_FUNCTION_NAME
+        expr: HIVE_FUNCTION_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - CONCAT_WS
+          - FIND_IN_SET
+          - NOW
+        description: The name of the Hive function being used, such as string manipulation or date/time functions.
+        synonyms:
+          - hive_func_name
+          - hive_function_label
+          - hive_method_name
+          - hive_operation_name
+          - hive_procedure_name
+          - hive_udf_name
+      - name: HIVE_FUNC_DESC
+        expr: HIVE_FUNC_DESC
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Similar to concat() additionally takes separator SEP. You should use this if you wanted to concatenate the input strings with a delimiter.
+          - ' Returns the position (starting from 1) of the first occurrence of a specified string within a comma-separated string. Returns NULL if either argument is NULL, 0 if the search string is not found, or 0 if the search string contains a comma.'
+          - Gives Current Timestamp
+        description: A brief description of the function's purpose and behavior.
+        synonyms:
+          - hive_function_description
+          - hive_func_definition
+          - function_explanation
+          - hive_function_info
+          - hive_func_comment
+          - function_description_text
+      - name: HIVE_RETURN_VAL
+        expr: HIVE_RETURN_VAL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - String concatenated with delimitter
+          - INTEGER
+          - TIMESTAMP
+        description: The return value of a Hive function, which can be a string, integer, or timestamp, concatenated with a delimiter.
+        synonyms:
+          - return_value
+          - hive_output
+          - function_result
+          - hive_response
+          - result_value
+          - output_value
+      - name: HIVE_FUNC_SYNTAX
+        expr: HIVE_FUNC_SYNTAX
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - concat_ws('sep',col_a,col_b,col_c,...)
+          - FIND_IN_SET(STRING str, STRING strList)
+          - NOW
+        description: This column stores the syntax for various Hive functions, including string manipulation, data type conversion, and date/time functions, which can be used to perform specific operations on data in Hive tables.
+        synonyms:
+          - function_signature
+          - hive_function_format
+          - syntax_definition
+          - hive_query_syntax
+          - function_call_syntax
+          - hive_function_pattern
+    facts:
+      - name: FUNCTION_MAPPING_ID
+        expr: FUNCTION_MAPPING_ID
+        data_type: NUMBER(38,0)
+        sample_values:
+          - '1'
+          - '2'
+          - '3'
+        description: Unique identifier for a mapping between a Hive function and its corresponding database function.
+        synonyms:
+          - function_id
+          - mapping_key
+          - func_map_id
+          - function_reference_id
+          - id
+          - function_identifier
+    primary_key:
+      columns:
+        - FUNCTION_MAPPING_ID
+  - name: SF_FUNC
+    base_table:
+      database: HIVE_TO_SF_MGN
+      schema: FUNCTION_TRANSLATOR
+      table: SF_FUNC
+    dimensions:
+      - name: SF_FUNC_NAME
+        expr: SF_FUNC_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - EXTRACT_FUNCTIONS
+          - CONCAT_WS_IGNORE_NULLS
+          - ARRAY_POSITION
+        description: The name of a Snowflake function, such as EXTRACT_FUNCTIONS, CONCAT_WS_IGNORE_NULLS, or ARRAY_POSITION, that is used to perform a specific operation or calculation on data.
+        synonyms:
+          - function_name
+          - sf_function
+          - snowflake_function
+          - function_identifier
+          - sf_func_id
+          - function_label
+      - name: SF_FUNC_DESC
+        expr: SF_FUNC_DESC
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - extract functions that are used to extract month/year/day from a date/time expression
+          - This is perfect alternative of concat_ws hive function because it handles nulls
+          - Returns the index of the first occurrence of an element in an array.
+        description: A brief description of the function's purpose.
+        synonyms:
+          - function_description
+          - function_info
+          - sf_function_details
+          - function_explanation
+          - sf_func_info
+          - function_comment
+      - name: SF_RETURN_VAL
+        expr: SF_RETURN_VAL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Year/Month/Day in NUMBER FORMAT
+          - String
+          - INTEGER
+        description: Return value of a sales force function, represented as a date in the format year/month/day, accompanied by a descriptive string and an integer identifier.
+        synonyms:
+          - return_value
+          - function_output
+          - result_value
+          - output_value
+          - function_result
+          - return_type
+          - value_returned
+      - name: SF_FUNC_SYNTAX
+        expr: SF_FUNC_SYNTAX
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - 'Visit this link to know all types of extract functions: https://docs.snowflake.com/en/sql-reference/functions/year#syntax'
+          - ARRAY_TO_STRING(ARRAY_CONSTRUCT_COMPACT(col_a,col_b, col_c, col_d), sep)
+          - ARRAY_POSITION(VARINT expt, ARRAY)
+        description: This column contains the syntax for various Snowflake functions, including extract functions, array functions, and other data manipulation functions, providing a reference for users to construct and utilize these functions in their queries.
+        synonyms:
+          - function_signature
+          - syntax_definition
+          - function_format
+          - sf_function_syntax
+          - function_pattern
+          - syntax_template
+          - function_structure
+    facts:
+      - name: FUNCTION_MAPPING_ID
+        expr: FUNCTION_MAPPING_ID
+        data_type: NUMBER(38,0)
+        sample_values:
+          - '4'
+          - '1'
+          - '2'
+        description: Unique identifier for a specific function mapping.
+        synonyms:
+          - function_id
+          - mapping_key
+          - translator_id
+          - hive_sf_mapping_id
+          - function_reference_id
+          - sf_function_id
+    primary_key:
+      columns:
+        - FUNCTION_MAPPING_ID
+relationships:
+  - name: sf_to_hive
+    join_type: left_outer
+    relationship_type: one_to_one
+    left_table: SF_FUNC
+    relationship_columns:
+      - left_column: FUNCTION_MAPPING_ID
+        right_column: FUNCTION_MAPPING_ID
+    right_table: HIVE_FUNC
+  - name: sf_error_info
+    join_type: left_outer
+    relationship_type: one_to_one
+    left_table: SF_FUNC
+    relationship_columns:
+      - left_column: FUNCTION_MAPPING_ID
+        right_column: FUNCTION_MAPPING_ID
+    right_table: ERROR_INFO
